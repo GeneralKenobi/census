@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: census
+  labels:
+    app: census
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: census
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: census
+    spec:
+      containers:
+        - name: census
+          image: census:dev
+          imagePullPolicy: IfNotPresent
+          args:
+            - -config-file=/etc/census/config/config.json,/etc/census/secret-config/config.json
+            - -log-level=DEBUG
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/census/config
+            - name: secret-config-volume
+              mountPath: /etc/census/secret-config
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: config-volume
+          configMap:
+            name: census-config
+        - name: secret-config-volume
+          secret:
+            secretName: census-secret
