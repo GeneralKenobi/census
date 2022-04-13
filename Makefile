@@ -1,4 +1,4 @@
-.PHONY: build-census build-postgres-dbinit \
+.PHONY: build-census build-postgres-dbinit test e2e \
 minikube minikube-clean minikube-start minikube-stop minikube-tunnel \
 postgres postgres-clean postgres-reset \
 minikube-build-postgres-dbinit \
@@ -21,6 +21,23 @@ build-census:
 
 build-postgres-dbinit:
 	@docker build -t postgres-dbinit:$(BUILD_VERSION) db
+
+
+#
+# Tests
+#
+
+test:
+	@go test ./cmd/... ./pkg/... ./internal/...
+
+CENSUS_HOST ?= localhost
+CENSUS_PORT ?= 8443
+CENSUS_PROTOCOL ?= https
+e2e:
+	@CENSUS_HOST=$(CENSUS_HOST) \
+	CENSUS_PORT=$(CENSUS_PORT) \
+	CENSUS_PROTOCOL=$(CENSUS_PROTOCOL) \
+	go test ./test/e2e/...
 
 
 #
