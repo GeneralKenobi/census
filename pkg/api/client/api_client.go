@@ -20,7 +20,7 @@ type api struct {
 var _ Api = (*api)(nil) // Interface guard
 
 func (api api) get(ctx context.Context, path string) (*http.Response, error) {
-	return api.doRequest(ctx, http.MethodPost, path)
+	return api.doRequest(ctx, http.MethodGet, path)
 }
 
 func (api api) delete(ctx context.Context, path string) (*http.Response, error) {
