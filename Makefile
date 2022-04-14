@@ -34,10 +34,11 @@ CENSUS_HOST ?= localhost
 CENSUS_PORT ?= 8443
 CENSUS_PROTOCOL ?= https
 e2e:
+	@go clean -testcache
 	@CENSUS_HOST=$(CENSUS_HOST) \
 	CENSUS_PORT=$(CENSUS_PORT) \
 	CENSUS_PROTOCOL=$(CENSUS_PROTOCOL) \
-	go test ./test/e2e/...
+	go test -v ./test/e2e/...
 
 
 #

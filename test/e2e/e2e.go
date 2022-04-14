@@ -21,7 +21,7 @@ const (
 // Context creates a context with a correlation ID and logs that correlation ID to t.
 func Context(t *testing.T) context.Context {
 	ctx := mdctx.New()
-	t.Logf("Correlation ID: %s", mdctx.CorrelationId(ctx))
+	t.Logf("Test correlation ID: %s", mdctx.CorrelationId(ctx))
 	return ctx
 }
 
