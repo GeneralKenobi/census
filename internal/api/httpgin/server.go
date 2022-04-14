@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/GeneralKenobi/census/internal/api/httpgin/handler/health"
+	"github.com/GeneralKenobi/census/internal/api/httpgin/handler/person"
 	"github.com/GeneralKenobi/census/internal/api/httpgin/request"
 	"github.com/GeneralKenobi/census/internal/config"
 	"github.com/GeneralKenobi/census/internal/db"
@@ -48,6 +49,12 @@ func (server *Server) setupGinEngine() *gin.Engine {
 	ginEngine.Use(gin.Recovery(), request.ContextMiddleware, request.LogRequestProcessingMiddleware)
 
 	ginEngine.GET("/health", health.HandlerFunc)
+
+	personHandler := person.NewHandler(server.dbCtx, server.dbCtx)
+	ginEngine.POST("/api/person", personHandler.CreateHandlerFunc)
+	ginEngine.GET("/api/person/:id", personHandler.GetHandlerFunc)
+	ginEngine.PUT("/api/person/:id", personHandler.UpdateHandlerFunc)
+	ginEngine.DELETE("/api/person/:id", personHandler.DeleteHandlerFunc)
 
 	return ginEngine
 }
