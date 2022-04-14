@@ -4,7 +4,7 @@ import (
 	"github.com/GeneralKenobi/census/pkg/api/apimodel"
 	"github.com/GeneralKenobi/census/pkg/util"
 	"github.com/GeneralKenobi/census/test/e2e"
-	testutil2 "github.com/GeneralKenobi/census/test/e2e/e2eutil"
+	"github.com/GeneralKenobi/census/test/e2e/e2eutil"
 	"testing"
 	"time"
 )
@@ -16,18 +16,18 @@ func TestUpdate(t *testing.T) {
 	personDefinition := apimodel.PersonCreate{
 		Name:        "John",
 		Surname:     "Smith",
-		Email:       testutil2.RandomEmail(),
+		Email:       e2eutil.RandomEmail(),
 		DateOfBirth: util.Date(1995, time.August, 13),
 		Hobby:       "Jogging",
 	}
 	personCreated, err := api.CreatePerson(ctx, personDefinition)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 
 	personBeforeUpdate, err := api.GetPerson(ctx, personCreated.Id)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 
 	personUpdate := apimodel.PersonUpdate{
@@ -38,12 +38,12 @@ func TestUpdate(t *testing.T) {
 	}
 	err = api.UpdatePerson(ctx, personCreated.Id, personUpdate)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 
 	personAfterUpdate, err := api.GetPerson(ctx, personCreated.Id)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 	if personUpdate.Name != personAfterUpdate.Name ||
 		personUpdate.Surname != personAfterUpdate.Surname ||
@@ -78,8 +78,14 @@ func TestUpdateShouldFailForNotExistingPersonId(t *testing.T) {
 	ctx := e2e.Context(t)
 
 	randomId := util.RandomAlphanumericString(8)
-	err := api.UpdatePerson(ctx, randomId, apimodel.PersonUpdate{})
-	if !testutil2.IsNotFound(err) {
+	personUpdate := apimodel.PersonUpdate{
+		Name:        "James",
+		Surname:     "Doe",
+		DateOfBirth: time.Date(1965, 6, 11, 0, 0, 0, 0, time.UTC),
+		Hobby:       "Reading",
+	}
+	err := api.UpdatePerson(ctx, randomId, personUpdate)
+	if !e2eutil.IsNotFound(err) {
 		t.Fatalf("Expected a not found error but got %v", err)
 	}
 }

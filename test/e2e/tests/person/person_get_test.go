@@ -4,7 +4,7 @@ import (
 	"github.com/GeneralKenobi/census/pkg/api/apimodel"
 	"github.com/GeneralKenobi/census/pkg/util"
 	"github.com/GeneralKenobi/census/test/e2e"
-	testutil2 "github.com/GeneralKenobi/census/test/e2e/e2eutil"
+	"github.com/GeneralKenobi/census/test/e2e/e2eutil"
 	"testing"
 	"time"
 )
@@ -16,18 +16,18 @@ func TestGet(t *testing.T) {
 	personDefinition := apimodel.PersonCreate{
 		Name:        "John",
 		Surname:     "Smith",
-		Email:       testutil2.RandomEmail(),
+		Email:       e2eutil.RandomEmail(),
 		DateOfBirth: util.Date(1995, time.September, 13),
 		Hobby:       "Jogging",
 	}
 	personCreated, err := api.CreatePerson(ctx, personDefinition)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 
 	person, err := api.GetPerson(ctx, personCreated.Id)
 	if err != nil {
-		t.Fatalf("Expected no error but got %v", err)
+		t.Fatalf("Expected no error but got: %v", err)
 	}
 
 	if personDefinition.Name != person.Name ||
@@ -56,7 +56,7 @@ func TestGetShouldFailForNotExistingPersonId(t *testing.T) {
 
 	randomId := util.RandomAlphanumericString(8)
 	_, err := api.GetPerson(ctx, randomId)
-	if !testutil2.IsNotFound(err) {
+	if !e2eutil.IsNotFound(err) {
 		t.Fatalf("Expected a not found error but got %v", err)
 	}
 }

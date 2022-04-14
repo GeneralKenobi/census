@@ -56,7 +56,7 @@ func TestCreatePersonFromDto(t *testing.T) {
 	testObject := New(repository)
 	result, err := testObject.CreateFromDto(mdctx.New(), personDto)
 	if err != nil {
-		t.Errorf("Expected no error but got %v", err)
+		t.Errorf("Expected no error but got: %v", err)
 	}
 	if result != expectedPerson {
 		t.Errorf("Expected person like %#v but got %#v", expectedPerson, result)
