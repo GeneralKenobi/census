@@ -6,6 +6,8 @@ import (
 	"github.com/GeneralKenobi/census/internal/db/postgres"
 	"github.com/GeneralKenobi/census/pkg/mdctx"
 	"github.com/GeneralKenobi/census/pkg/shutdown"
+	"github.com/GeneralKenobi/census/pkg/util"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,15 +24,21 @@ func main() {
 func configure() {
 	argsCfg := commandLineArgsConfig()
 
-	err := config.Load(argsCfg.configFiles)
+	err := mdctx.SetLogLevelFromString(argsCfg.logLevel)
+	if err != nil {
+		mdctx.Fatalf(nil, "Error setting log level: %v", err)
+	}
+
+	err = config.Load(argsCfg.configFiles)
 	if err != nil {
 		mdctx.Fatalf(nil, "Error loading configuration: %v", err)
 	}
 
-	err = mdctx.SetLogLevelFromString(argsCfg.logLevel)
+	seed, err := util.RngSeed()
 	if err != nil {
-		mdctx.Fatalf(nil, "Error setting log level: %v", err)
+		mdctx.Fatalf(nil, "Error seeding random number generator: %v", err)
 	}
+	rand.Seed(seed)
 }
 
 func bootstrap(parentCtx shutdown.ParentContext) {
