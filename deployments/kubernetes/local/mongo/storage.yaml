@@ -1,9 +1,9 @@
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: postgres-volume
+  name: mongo-volume
   labels:
-    app: postgres
+    app: mongo
 spec:
   storageClassName: manual
   capacity:
@@ -16,9 +16,9 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: postgres-volume-claim
+  name: mongo-volume-claim
   labels:
-    app: postgres
+    app: mongo
 spec:
   storageClassName: manual
   accessModes:

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:5.0.7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: db
+              containerPort: 27017
+              protocol: TCP
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-credentials
+                  key: user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-credentials
+                  key: password
+          envFrom:
+            - configMapRef:
+                name: mongo-config
+          volumeMounts:
+            - name: mongo-volume
+              mountPath: /data/db
+            - name: init-scripts-volume
+              mountPath: /docker-entrypoint-initdb.d
+      initContainers:
+        - name: init-scripts
+          image: mongo-dbinit:dev
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: init-scripts-volume
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: mongo-volume
+          persistentVolumeClaim:
+            claimName: mongo-volume-claim
+        - name: init-scripts-volume
+          emptyDir:
+            sizeLimit: 1Gi

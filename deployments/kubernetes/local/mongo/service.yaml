@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 27017
+      targetPort: db
+  selector:
+    app: mongo
+---
+# This service is used for local development to get access to the DB from the host machine
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-minikube-tunnel
+  labels:
+    app: mongo
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 27017
+      targetPort: db
+  selector:
+    app: mongo

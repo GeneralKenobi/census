@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-cleaner
+spec:
+  template:
+    spec:
+      containers:
+        - name: mongo-cleaner
+          image: busybox:1.35
+          imagePullPolicy: IfNotPresent
+          command: [ 'sh', '-c', "ls -al /mongo-data && rm -rf /mongo-data/* && ls -al /mongo-data" ]
+          volumeMounts:
+            - mountPath: /mongo-data
+              name: mongo-volume
+      restartPolicy: Never
+      volumes:
+        - name: mongo-volume
+          persistentVolumeClaim:
+            claimName: mongo-volume-claim
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2

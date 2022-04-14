@@ -1,9 +1,13 @@
-.PHONY: build-census build-postgres-dbinit test e2e \
+.PHONY: build-census build-postgres-dbinit build-mongo-dbinit test e2e \
 minikube minikube-clean minikube-start minikube-stop minikube-tunnel \
 postgres postgres-clean postgres-reset \
 minikube-build-postgres-dbinit \
 postgres-config postgres-storage postgres-deployment postgres-service \
 postgres-service-clean postgres-deployment-clean postgres-storage-clean postgres-config-clean \
+mongo mongo-clean mongo-reset \
+minikube-build-mongo-dbinit \
+mongo-config mongo-storage mongo-deployment mongo-service \
+mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clean \
 census census-clean census-rebuild \
 minikube-build-census \
 census-config census-deployment census-service \
@@ -20,7 +24,10 @@ build-census:
 	@docker build -t census:$(BUILD_VERSION) .
 
 build-postgres-dbinit:
-	@docker build -t postgres-dbinit:$(BUILD_VERSION) db
+	@docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres
+
+build-mongo-dbinit:
+	@docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo
 
 
 #
@@ -111,7 +118,7 @@ postgres-reset: postgres-deployment-clean postgres-clear-volume minikube-build-p
 minikube-build-postgres-dbinit:
 	@{ \
 		eval $$(minikube docker-env); \
-		docker build -t postgres-dbinit:$(BUILD_VERSION) db; \
+		docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres; \
 	}
 
 POSTGRES_YAMLS_DIR=deployments/kubernetes/local/postgres
@@ -147,6 +154,61 @@ postgres-service-clean:
 
 # Delete DB content
 postgres-clear-volume:
+	@kubectl wait --for delete pod --selector=app=postgres
 	@kubectl delete -f $(POSTGRES_CLEANER_DEPLOYMENT) --ignore-not-found
 	@kubectl create -f $(POSTGRES_CLEANER_DEPLOYMENT)
 	@kubectl wait --for condition=complete -f $(POSTGRES_CLEANER_DEPLOYMENT)
+
+
+#
+# Mongo
+#
+
+mongo: minikube-build-mongo-dbinit mongo-config mongo-storage mongo-deployment mongo-service
+mongo-clean: mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clean
+# Gracefully delete DB content and reinitialize the database
+mongo-reset: mongo-deployment-clean mongo-clear-volume minikube-build-mongo-dbinit mongo-deployment
+
+minikube-build-mongo-dbinit:
+	@{ \
+		eval $$(minikube docker-env); \
+		docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo; \
+	}
+
+MONGO_YAMLS_DIR=deployments/kubernetes/local/mongo
+MONGO_CONFIG=$(MONGO_YAMLS_DIR)/config.yaml
+MONGO_DEPLOYMENT=$(MONGO_YAMLS_DIR)/deployment.yaml
+MONGO_SERVICE=$(MONGO_YAMLS_DIR)/service.yaml
+MONGO_STORAGE=$(MONGO_YAMLS_DIR)/storage.yaml
+MONGO_CLEANER_DEPLOYMENT=$(MONGO_YAMLS_DIR)/cleaner-deployment.yaml
+
+mongo-config:
+	@kubectl create -f $(MONGO_CONFIG)
+
+mongo-config-clean:
+	@kubectl delete -f $(MONGO_CONFIG) --ignore-not-found
+
+mongo-storage:
+	@kubectl create -f $(MONGO_STORAGE)
+
+mongo-storage-clean:
+	@kubectl delete -f $(MONGO_STORAGE) --ignore-not-found
+
+mongo-deployment:
+	@kubectl create -f $(MONGO_DEPLOYMENT)
+
+mongo-deployment-clean:
+	@kubectl delete -f $(MONGO_DEPLOYMENT) --ignore-not-found
+
+mongo-service:
+	@kubectl create -f $(MONGO_SERVICE)
+
+mongo-service-clean:
+	@kubectl delete -f $(MONGO_SERVICE) --ignore-not-found
+
+# Delete DB content
+mongo-clear-volume:
+	@kubectl wait --for delete pod --selector=app=mongo
+	@kubectl delete -f $(MONGO_CLEANER_DEPLOYMENT) --ignore-not-found
+	@kubectl create -f $(MONGO_CLEANER_DEPLOYMENT)
+	@kubectl wait --for condition=complete -f $(MONGO_CLEANER_DEPLOYMENT)
