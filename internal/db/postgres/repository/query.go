@@ -7,6 +7,7 @@ import (
 	"github.com/GeneralKenobi/census/internal/db"
 	"github.com/GeneralKenobi/census/pkg/mdctx"
 	"github.com/GeneralKenobi/census/pkg/util"
+	"strconv"
 )
 
 // rowScanSupplier defines a function that returns an object and its properties that are then used in sql.Rows Scan method to convert
@@ -105,4 +106,14 @@ func closeRows(ctx context.Context, rows *sql.Rows) {
 	if err != nil {
 		mdctx.Errorf(ctx, "Error closing rows: %v", err)
 	}
+}
+
+// idAsInt tries to convert the given ID to an integer. It returns db.ErrNoRows on failure because non-integer IDs can't match any rows
+// because every row has an integer ID.
+func idAsInt(id string) (int, error) {
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, fmt.Errorf("non-integer IDs like %s are not supported: %w", id, db.ErrNoRows)
+	}
+	return idInt, nil
 }

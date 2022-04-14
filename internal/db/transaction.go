@@ -60,3 +60,32 @@ func InTransactionRetV[V any](ctx context.Context, transactioner Transactioner, 
 
 	return value, nil
 }
+
+// WithRepository gets a repository from the querent and runs the given function with it. It returns an error without running the function
+// if getting a repository failed.
+//
+// It's provided to allow for coding style analogous to InTransaction when transaction is not required.
+func WithRepository(ctx context.Context, querent Querent, todo func(repository Repository) error) error {
+	_, err := WithRepositoryRetV(ctx, querent, func(repository Repository) (any, error) {
+		return nil, todo(repository)
+	})
+	return err
+}
+
+// WithRepositoryRetV gets a repository from the querent and runs the given function with it. It returns an error without running the
+// function if getting a repository failed.
+//
+// It's provided to allow for coding style analogous to InTransactionRetV when transaction is not required.
+func WithRepositoryRetV[V any](ctx context.Context, querent Querent, todo func(repository Repository) (V, error)) (V, error) {
+	repository, err := querent.Repository(ctx)
+	if err != nil {
+		return util.ZeroValue[V](), fmt.Errorf("error creating a repository: %w", err)
+	}
+
+	value, err := todo(repository)
+	if err != nil {
+		return util.ZeroValue[V](), err
+	}
+
+	return value, nil
+}

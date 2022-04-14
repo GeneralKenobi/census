@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/GeneralKenobi/census/internal/db/model"
 )
 
 // Context is the top-level interface implemented by db providers with support for both transactional and no-transaction-guarantee
@@ -34,6 +35,18 @@ type Transaction interface {
 
 // Repository aggregates all queries implemented by db providers.
 type Repository interface {
+	PersonRepository
+}
+
+type PersonRepository interface {
+	FindPersonById(ctx context.Context, id string) (model.Person, error)
+	FindPersonByEmail(ctx context.Context, email string) (model.Person, error)
+
+	InsertPerson(ctx context.Context, person model.Person) (model.Person, error)
+
+	UpdatePerson(ctx context.Context, person model.Person) (model.Person, error)
+
+	DeletePersonById(ctx context.Context, id string) error
 }
 
 var (
