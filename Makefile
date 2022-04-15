@@ -208,10 +208,13 @@ mongo-storage-clean:
 mongo-deployment:
 	@kubectl create -f $(MONGO_DEPLOYMENT)
 
-MONGO_INIT_REPLICA_SET_JS="mongo -u \$${MONGO_INITDB_ROOT_USERNAME} -p \$${MONGO_INITDB_ROOT_PASSWORD} --eval 'if (rs.status().code == 94) {print(\"Initializing replica set\"); rs.initiate( {_id : \"rs0\", members: [{ _id: 0, host: \"localhost:27017\" }]});} else { print(\"Replica set already initialized\")}'"
+MONGO_INIT_REPLICA_SET_JS=if (rs.status().code == 94) {print(\"Initializing replica set\"); rs.initiate( {_id : \"rs0\", members: [{ _id: 0, host: \"mongo:27017\" }]});} else { print(\"Replica set already initialized\")}
 mongo-replica-set-init:
 	@kubectl wait pods --for condition=Ready --selector app=mongo
-	@kubectl exec -it deploy/mongo -- /bin/bash -c $(MONGO_INIT_REPLICA_SET_JS)
+	@# Something's wrong with the k8s network and when mongo tries to connect to itself via the 'mongo' k8s service it fails.
+	@# To fix this we map the 'mongo' service DNS in /etc/hosts to localhost to bypass the k8s network (there's only 1 mongo pod anyway).
+	@kubectl exec -it -c mongo deploy/mongo -- /bin/bash -c "echo '127.0.0.1 mongo' >> /etc/hosts"
+	@kubectl exec -it -c mongo deploy/mongo -- /bin/bash -c "mongo -u \$${MONGO_INITDB_ROOT_USERNAME} -p \$${MONGO_INITDB_ROOT_PASSWORD} --eval '$(MONGO_INIT_REPLICA_SET_JS)'"
 
 mongo-deployment-clean:
 	@kubectl delete -f $(MONGO_DEPLOYMENT) --ignore-not-found
