@@ -41,6 +41,16 @@ spec:
               mountPath: /var/lib/postgresql/data
             - name: init-scripts-volume
               mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            tcpSocket:
+              port: db
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: db
+            initialDelaySeconds: 5
+            periodSeconds: 10
       initContainers:
         - name: init-scripts
           image: postgres-dbinit:dev

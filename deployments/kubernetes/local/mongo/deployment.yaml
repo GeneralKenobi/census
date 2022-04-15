@@ -18,6 +18,7 @@ spec:
         - name: mongo
           image: mongo:5.0.7
           imagePullPolicy: IfNotPresent
+          args: [ "--replSet", "rs0", "--keyFile", "/mongo-keys/mongodb.key", "--bind_ip_all" ]
           ports:
             - name: db
               containerPort: 27017
@@ -41,6 +42,18 @@ spec:
               mountPath: /data/db
             - name: init-scripts-volume
               mountPath: /docker-entrypoint-initdb.d
+            - name: keys-volume
+              mountPath: /mongo-keys
+          livenessProbe:
+            tcpSocket:
+              port: db
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: db
+            initialDelaySeconds: 5
+            periodSeconds: 10
       initContainers:
         - name: init-scripts
           image: mongo-dbinit:dev
@@ -48,10 +61,19 @@ spec:
           volumeMounts:
             - name: init-scripts-volume
               mountPath: /docker-entrypoint-initdb.d
+        - name: key-generator
+          image: mongo-key-generator:dev
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: keys-volume
+              mountPath: /mongo-keys
       volumes:
         - name: mongo-volume
           persistentVolumeClaim:
             claimName: mongo-volume-claim
         - name: init-scripts-volume
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: keys-volume
           emptyDir:
             sizeLimit: 1Gi

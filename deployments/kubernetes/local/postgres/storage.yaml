@@ -11,7 +11,7 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/mnt/mongo/data"
+    path: "/mnt/postgres/data"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

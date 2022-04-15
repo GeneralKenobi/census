@@ -1,12 +1,12 @@
-.PHONY: build-census build-postgres-dbinit build-mongo-dbinit test e2e \
+.PHONY: build-census build-postgres-dbinit build-mongo-dbinit build-mongo-key-generator test e2e \
 minikube minikube-clean minikube-start minikube-stop minikube-tunnel \
 postgres postgres-clean postgres-reset \
 minikube-build-postgres-dbinit \
 postgres-config postgres-storage postgres-deployment postgres-service \
 postgres-service-clean postgres-deployment-clean postgres-storage-clean postgres-config-clean \
 mongo mongo-clean mongo-reset \
-minikube-build-mongo-dbinit \
-mongo-config mongo-storage mongo-deployment mongo-service \
+minikube-build-mongo-dbinit minikube-build-mongo-key-generator \
+mongo-config mongo-storage mongo-deployment mongo-replica-set-init mongo-service \
 mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clean \
 census census-clean census-rebuild \
 minikube-build-census \
@@ -24,10 +24,14 @@ build-census:
 	@docker build -t census:$(BUILD_VERSION) .
 
 build-postgres-dbinit:
-	@docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres
+	@docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres/init
 
 build-mongo-dbinit:
-	@docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo
+	@docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo/init
+
+build-mongo-key-generator:
+	@docker build -t mongo-key-generator:$(BUILD_VERSION) db/mongo/keys
+
 
 
 #
@@ -118,7 +122,7 @@ postgres-reset: postgres-deployment-clean postgres-clear-volume minikube-build-p
 minikube-build-postgres-dbinit:
 	@{ \
 		eval $$(minikube docker-env); \
-		docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres; \
+		docker build -t postgres-dbinit:$(BUILD_VERSION) db/postgres/init; \
 	}
 
 POSTGRES_YAMLS_DIR=deployments/kubernetes/local/postgres
@@ -164,16 +168,23 @@ postgres-clear-volume:
 # Mongo
 #
 
-mongo: minikube-build-mongo-dbinit mongo-config mongo-storage mongo-deployment mongo-service
+mongo: minikube-build-mongo-dbinit minikube-build-mongo-key-generator mongo-config mongo-storage mongo-deployment mongo-replica-set-init mongo-service
 mongo-clean: mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clean
 # Gracefully delete DB content and reinitialize the database
-mongo-reset: mongo-deployment-clean mongo-clear-volume minikube-build-mongo-dbinit mongo-deployment
+mongo-reset: mongo-deployment-clean mongo-clear-volume minikube-build-mongo-dbinit minikube-build-mongo-key-generator mongo-deployment mongo-replica-set-init
 
 minikube-build-mongo-dbinit:
 	@{ \
 		eval $$(minikube docker-env); \
-		docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo; \
+		docker build -t mongo-dbinit:$(BUILD_VERSION) db/mongo/init; \
 	}
+
+minikube-build-mongo-key-generator:
+	@{ \
+		eval $$(minikube docker-env); \
+		docker build -t mongo-key-generator:$(BUILD_VERSION) db/mongo/keys; \
+	}
+
 
 MONGO_YAMLS_DIR=deployments/kubernetes/local/mongo
 MONGO_CONFIG=$(MONGO_YAMLS_DIR)/config.yaml
@@ -196,6 +207,11 @@ mongo-storage-clean:
 
 mongo-deployment:
 	@kubectl create -f $(MONGO_DEPLOYMENT)
+
+MONGO_INIT_REPLICA_SET_JS="mongo -u \$${MONGO_INITDB_ROOT_USERNAME} -p \$${MONGO_INITDB_ROOT_PASSWORD} --eval 'if (rs.status().code == 94) {print(\"Initializing replica set\"); rs.initiate( {_id : \"rs0\", members: [{ _id: 0, host: \"localhost:27017\" }]});} else { print(\"Replica set already initialized\")}'"
+mongo-replica-set-init:
+	@kubectl wait pods --for condition=Ready --selector app=mongo
+	@kubectl exec -it deploy/mongo -- /bin/bash -c $(MONGO_INIT_REPLICA_SET_JS)
 
 mongo-deployment-clean:
 	@kubectl delete -f $(MONGO_DEPLOYMENT) --ignore-not-found
