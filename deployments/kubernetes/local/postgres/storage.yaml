@@ -11,7 +11,10 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/mnt/postgres/data"
+    path: "/data/census/postgres/"
+  claimRef:
+    namespace: default
+    name: postgres-volume-claim
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

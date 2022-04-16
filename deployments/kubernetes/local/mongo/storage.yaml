@@ -11,7 +11,10 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/mnt/mongo/data"
+    path: "/data/census/mongo"
+  claimRef:
+    namespace: default
+    name: mongo-volume-claim
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
