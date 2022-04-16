@@ -45,6 +45,7 @@ CENSUS_HOST ?= localhost
 CENSUS_PORT ?= 8443
 CENSUS_PROTOCOL ?= https
 e2e:
+	@# E2e test results can't be cached because they don't depend directly on the tested code.
 	@go clean -testcache ./test/e2e/...
 	@CENSUS_HOST=$(CENSUS_HOST) \
 	CENSUS_PORT=$(CENSUS_PORT) \
