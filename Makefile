@@ -11,7 +11,8 @@ mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clea
 census census-clean census-rebuild \
 minikube-build-census \
 census-config census-tls-certs census-deployment census-service \
-census-config-clean census-tls-certs-clean census-deployment-clean census-service-clean
+census-config-clean census-tls-certs-clean census-deployment-clean census-service-clean \
+enable-postgres update-config-to-postgres enable-mongo update-config-to-mongo
 
 
 BUILD_VERSION ?= dev
@@ -73,7 +74,7 @@ minikube-tunnel:
 
 
 #
-# Sample-microservice
+# Census
 #
 
 census: minikube-build-census census-tls-certs census-config census-deployment census-service
@@ -119,6 +120,21 @@ census-service:
 
 census-service-clean:
 	@kubectl delete -f $(CENSUS_SERVICE) --ignore-not-found
+
+
+#
+# Switching between DBs
+#
+
+enable-postgres: census-deployment-clean census-config-clean update-config-to-postgres census-config census-deployment
+
+update-config-to-postgres:
+	@sed -i '' -e 's/"database": "mongo"/"database": "postgres"/g' deployments/kubernetes/local/census/config.yaml
+
+enable-mongo: census-deployment-clean census-config-clean update-config-to-mongo census-config census-deployment
+
+update-config-to-mongo:
+	@sed -i '' -e 's/"database": "postgres"/"database": "mongo"/g' deployments/kubernetes/local/census/config.yaml
 
 
 #

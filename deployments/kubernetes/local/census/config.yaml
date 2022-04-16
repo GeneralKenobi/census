@@ -8,7 +8,7 @@ data:
   config.json: |-
     {
       "global": {
-        "database": "mongo"
+        "database": "postgres"
       },
       "httpServer": {
         "port": 8443,

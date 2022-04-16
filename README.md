@@ -81,6 +81,12 @@ make census-clean
 make postgres
 ```
 
+#### Switch to postgres DB
+
+```shell
+make enable-postgres
+```
+
 #### Reset and redeploy postgres DB (start from scratch)
 
 ```shell
@@ -97,6 +103,12 @@ make postgres-clean
 
 ```shell
 make mongo
+```
+
+#### Switch to mongo DB
+
+```shell
+make enable-mongo
 ```
 
 #### Reset and redeploy mongo DB (start from scratch)
