@@ -10,8 +10,8 @@ mongo-config mongo-storage mongo-deployment mongo-replica-set-init mongo-service
 mongo-service-clean mongo-deployment-clean mongo-storage-clean mongo-config-clean \
 census census-clean census-rebuild \
 minikube-build-census \
-census-config census-deployment census-service \
-census-config-clean census-deployment-clean census-service-clean
+census-config census-tls-certs census-deployment census-service \
+census-config-clean census-tls-certs-clean census-deployment-clean census-service-clean
 
 
 BUILD_VERSION ?= dev
@@ -45,7 +45,7 @@ CENSUS_HOST ?= localhost
 CENSUS_PORT ?= 8443
 CENSUS_PROTOCOL ?= https
 e2e:
-	@go clean -testcache
+	@go clean -testcache ./test/e2e/...
 	@CENSUS_HOST=$(CENSUS_HOST) \
 	CENSUS_PORT=$(CENSUS_PORT) \
 	CENSUS_PROTOCOL=$(CENSUS_PROTOCOL) \
@@ -56,9 +56,9 @@ e2e:
 # Minikube commands
 #
 
-minikube: minikube-start postgres census
+minikube: minikube-start
 
-minikube-clean: census-clean postgres-clean minikube-stop
+minikube-clean: census-clean postgres-clean mongo-clean minikube-stop
 
 minikube-start:
 	@minikube start
@@ -75,8 +75,8 @@ minikube-tunnel:
 # Sample-microservice
 #
 
-census: minikube-build-census census-config census-deployment census-service
-census-clean: census-service-clean census-deployment-clean census-config-clean
+census: minikube-build-census census-tls-certs census-config census-deployment census-service
+census-clean: census-service-clean census-deployment-clean census-config-clean census-tls-certs-clean
 # Rebuild and redeploy census, update configuration
 census-rebuild: minikube-build-census census-deployment-clean census-config-clean census-config census-deployment
 
@@ -90,12 +90,22 @@ CENSUS_YAMLS_DIR=deployments/kubernetes/local/census
 CENSUS_CONFIG=$(CENSUS_YAMLS_DIR)/config.yaml
 CENSUS_DEPLOYMENT=$(CENSUS_YAMLS_DIR)/deployment.yaml
 CENSUS_SERVICE=$(CENSUS_YAMLS_DIR)/service.yaml
+CENSUS_TLS_SECRET_NAME=census-cert
 
 census-config:
 	@kubectl create -f $(CENSUS_CONFIG)
 
 census-config-clean:
 	@kubectl delete -f $(CENSUS_CONFIG) --ignore-not-found
+
+census-tls-certs:
+	@openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=census.szyzog.com" -keyout certificates/census.key -out certificates/census.crt
+	@kubectl create secret tls $(CENSUS_TLS_SECRET_NAME) --cert certificates/census.crt --key certificates/census.key
+	@kubectl label secret $(CENSUS_TLS_SECRET_NAME) app=census
+
+census-tls-certs-clean:
+	@kubectl delete secret $(CENSUS_TLS_SECRET_NAME) --ignore-not-found
+	@rm -f certificates/census.crt certificates/census.key
 
 census-deployment:
 	@kubectl create -f $(CENSUS_DEPLOYMENT)

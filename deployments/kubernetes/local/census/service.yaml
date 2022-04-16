@@ -11,6 +11,6 @@ spec:
   internalTrafficPolicy: Cluster
   type: LoadBalancer
   ports:
-    - port: 8080
-      targetPort: http
+    - port: 8443
+      targetPort: api
       protocol: TCP

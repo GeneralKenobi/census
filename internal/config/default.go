@@ -6,8 +6,9 @@ var defaultConfig = Config{
 		ShutdownTimeoutSeconds: 30,
 	},
 	HttpServer: HttpServer{
-		Port:                   8080,
+		Port:                   8443,
 		ShutdownTimeoutSeconds: 30,
+		Tls:                    true,
 	},
 	Postgres: Postgres{
 		Port:      5432,

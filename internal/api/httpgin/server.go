@@ -61,7 +61,15 @@ func (server *Server) setupGinEngine() *gin.Engine {
 
 func (server *Server) listenAndServe() {
 	mdctx.Infof(nil, "Starting HTTP server on address %s", server.httpServer.Addr)
-	err := server.httpServer.ListenAndServe()
+	cfg := config.Get().HttpServer
+
+	var err error
+	if cfg.Tls {
+		err = server.httpServer.ListenAndServeTLS(cfg.TlsCertPath, cfg.TlsCertKeyPath)
+	} else {
+		err = server.httpServer.ListenAndServe()
+	}
+
 	if err != nil && err != http.ErrServerClosed {
 		mdctx.Errorf(nil, "HTTP server exited with error: %v", err)
 	} else {

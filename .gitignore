@@ -16,3 +16,6 @@
 
 # GoLand config
 .idea
+
+certificates/*
+!certificates/README.md

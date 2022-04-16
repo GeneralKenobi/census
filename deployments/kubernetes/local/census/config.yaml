@@ -11,7 +11,10 @@ data:
         "database": "mongo"
       },
       "httpServer": {
-        "port": 8080
+        "port": 8443,
+        "tls": true,
+        "tlsCertPath": "/etc/census/certs/tls.crt",
+        "tlsCertKeyPath": "/etc/census/certs/tls.key" 
       },
       "postgres": {
         "host": "postgres",

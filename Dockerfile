@@ -15,5 +15,5 @@ WORKDIR /opt/census
 COPY --from=builder /go/github.com/GeneralKenobi/census/census census
 RUN chmod 755 census
 
-EXPOSE 8080
+EXPOSE 8443
 ENTRYPOINT ["/opt/census/census"]

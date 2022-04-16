@@ -15,8 +15,11 @@ type Global struct {
 }
 
 type HttpServer struct {
-	Port                   int `json:"port"`                   // Port to listen on
-	ShutdownTimeoutSeconds int `json:"shutdownTimeoutSeconds"` // Graceful shutdown time
+	Port                   int    `json:"port"`                   // Port to listen on
+	ShutdownTimeoutSeconds int    `json:"shutdownTimeoutSeconds"` // Graceful shutdown time
+	Tls                    bool   `json:"tls"`                    // Flag to enable/disable TLS
+	TlsCertPath            string `json:"tlsCertPath"`            // Path to the TLS certificate to serve
+	TlsCertKeyPath         string `json:"tlsCertKeyPath"`         // Path to the key corresponding to TlsCertPath
 }
 
 type Postgres struct {

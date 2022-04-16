@@ -27,24 +27,28 @@ spec:
             - -config-file=/etc/census/config/config.json,/etc/census/secret-config/config.json
             - -log-level=DEBUG
           ports:
-            - name: http
-              containerPort: 8080
+            - name: api
+              containerPort: 8443
               protocol: TCP
           volumeMounts:
             - name: config-volume
               mountPath: /etc/census/config
             - name: secret-config-volume
               mountPath: /etc/census/secret-config
+            - name: certs-volume
+              mountPath: /etc/census/certs
           livenessProbe:
             httpGet:
-              port: http
+              port: api
               path: /health
+              scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 5
           readinessProbe:
             httpGet:
-              port: http
+              port: api
               path: /health
+              scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 5
       dnsPolicy: ClusterFirst
@@ -57,3 +61,6 @@ spec:
         - name: secret-config-volume
           secret:
             secretName: census-secret
+        - name: certs-volume
+          secret:
+            secretName: census-cert
