@@ -7,13 +7,24 @@ metadata:
 data:
   config.json: |-
     {
+      "global": {
+        "database": "mongo"
+      },
       "httpServer": {
         "port": 8080
       },
       "postgres": {
         "host": "postgres",
         "port": 5432,
-        "database": "censusdb"
+        "database": "censusdb",
+        "verifyTls": false
+      },
+      "mongo": {
+        "host": "mongo",
+        "port": 27017,
+        "replicaSet": "rs0",
+        "database": "censusdb",
+        "verifyTls": false
       }
     }
 ---
@@ -30,5 +41,9 @@ stringData:
       "postgres": {
         "user": "admin",
         "password": "admin"
-      }
+      },
+      "mongo": {
+        "user": "admin",
+        "password": "admin"
+      } 
     }

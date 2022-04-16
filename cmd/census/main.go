@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/GeneralKenobi/census/internal/api/httpgin"
 	"github.com/GeneralKenobi/census/internal/config"
+	"github.com/GeneralKenobi/census/internal/db"
+	"github.com/GeneralKenobi/census/internal/db/mongo"
 	"github.com/GeneralKenobi/census/internal/db/postgres"
 	"github.com/GeneralKenobi/census/pkg/mdctx"
 	"github.com/GeneralKenobi/census/pkg/shutdown"
@@ -10,6 +13,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -42,15 +46,29 @@ func configure() {
 }
 
 func bootstrap(parentCtx shutdown.ParentContext) {
-	// DB
-	dbCtx, err := postgres.NewContext(parentCtx.NewContext("postgres"))
+	// Database
+	dbCtx, err := databaseContext(parentCtx.NewContext("database"))
 	if err != nil {
-		mdctx.Fatalf(nil, "Error connecting to DB: %v", err)
+		mdctx.Fatalf(nil, "Error initializing database: %v", err)
 	}
 
 	// HTTP server
 	httpServer := httpgin.NewServer(dbCtx)
 	go httpServer.Run(parentCtx.NewContext("http server"))
+}
+
+func databaseContext(ctx shutdown.Context) (db.Context, error) {
+	database := strings.ToLower(config.Get().Global.Database)
+	switch database {
+	case "postgres", "postgresdb":
+		mdctx.Debugf(nil, "Using postgres database")
+		return postgres.NewContext(ctx)
+	case "mongo", "mongodb":
+		mdctx.Debugf(nil, "Using mongo database")
+		return mongo.NewContext(ctx)
+	}
+
+	return nil, fmt.Errorf("unsupported database type: %s", database)
 }
 
 func shutdownAfterStopSignal(parentCtx shutdown.ParentContext) {

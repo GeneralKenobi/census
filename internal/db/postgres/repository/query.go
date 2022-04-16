@@ -31,7 +31,7 @@ func selectingAll[T any](ctx context.Context, queryName string, sql SqlExecutor,
 		item, props := rowScanSupplier()
 		err = rows.Scan(props...)
 		if err != nil {
-			return nil, fmt.Errorf("%v: error reading customer row: %w", queryName, err)
+			return nil, fmt.Errorf("%s: error reading row: %w", queryName, err)
 		}
 		items = append(items, *item)
 	}
@@ -47,7 +47,7 @@ func selectingOne[T any](ctx context.Context, queryName string, sql SqlExecutor,
 
 	rows, err := sql.QueryContext(ctx, query, args...)
 	if err != nil {
-		return util.ZeroValue[T](), fmt.Errorf("%v: error running query: %w", queryName, err)
+		return util.ZeroValue[T](), fmt.Errorf("%s: error running query: %w", queryName, err)
 	}
 	defer closeRows(ctx, rows)
 
@@ -57,7 +57,7 @@ func selectingOne[T any](ctx context.Context, queryName string, sql SqlExecutor,
 	result, props := rowScanSupplier()
 	err = rows.Scan(props...)
 	if err != nil {
-		return util.ZeroValue[T](), err
+		return util.ZeroValue[T](), fmt.Errorf("%s: error reading row: %w", queryName, err)
 	}
 	if rows.Next() {
 		return util.ZeroValue[T](), fmt.Errorf("%s: %w", queryName, db.ErrTooManyRows)
@@ -71,12 +71,12 @@ func selectingOne[T any](ctx context.Context, queryName string, sql SqlExecutor,
 func affectingMany(ctx context.Context, queryName string, sql SqlExecutor, query string, args ...any) (affectedRowsCount int64, err error) {
 	result, err := sql.ExecContext(ctx, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("%v: error running query: %w", queryName, err)
+		return 0, fmt.Errorf("%s: error running query: %w", queryName, err)
 	}
 
 	affectedRowsCount, err = result.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("%v: error obtaining the number of affected rows: %w", queryName, err)
+		return 0, fmt.Errorf("%s: error obtaining the number of affected rows: %w", queryName, err)
 	}
 
 	return affectedRowsCount, nil

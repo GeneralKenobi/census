@@ -1,37 +1,38 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"github.com/GeneralKenobi/census/internal/config"
 	"github.com/GeneralKenobi/census/internal/db"
-	"github.com/GeneralKenobi/census/internal/db/postgres/repository"
 	"github.com/GeneralKenobi/census/pkg/mdctx"
 	"github.com/GeneralKenobi/census/pkg/shutdown"
 	_ "github.com/lib/pq" // Postgres driver registration by import.
 )
 
-// Context implements DB integration for postgres.
-type Context struct {
-	db *sql.DB
-}
-
-var _ db.Context = (*Context)(nil) // Interface guard
-
 // NewContext creates a postgres DB context. The DB client is closed when context is canceled.
 func NewContext(ctx shutdown.Context) (*Context, error) {
-	cfg := config.Get().Postgres
-	// TODO: Add configuration for ssl
-	connectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
-	db, err := sql.Open("postgres", connectionString)
+	sqlDb, err := sql.Open("postgres", connectionString())
 	if err != nil {
 		return nil, fmt.Errorf("connection configuration is invalid: %w", err)
 	}
 
-	dbCtx := Context{db: db}
-	go shutdownDbOnContextCancellation(ctx, db)
+	dbCtx := Context{db: sqlDb}
+	go shutdownDbOnContextCancellation(ctx, sqlDb)
 	return &dbCtx, nil
+}
+
+func connectionString() string {
+	cfg := config.Get().Postgres
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database, sslMode(cfg.VerifyTls))
+}
+
+func sslMode(enable bool) string {
+	if enable {
+		return "verify-full"
+	}
+	return "disable"
 }
 
 func shutdownDbOnContextCancellation(ctx shutdown.Context, db *sql.DB) {
@@ -51,32 +52,9 @@ func shutdownDb(db *sql.DB) {
 	mdctx.Infof(nil, "DB connection closed")
 }
 
-func (postgresCtx *Context) Repository(ctx context.Context) (db.Repository, error) {
-	return repository.New(postgresCtx.db), nil
+// Context implements DB integration for postgres.
+type Context struct {
+	db *sql.DB
 }
 
-func (postgresCtx *Context) TransactionalRepository(ctx context.Context) (db.Repository, db.Transaction, error) {
-	transaction, err := postgresCtx.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error beginning a transaction: %w", err)
-	}
-
-	transactionalRepository := repository.New(transaction)
-	transactionCtx := &transactionContext{transaction: transaction}
-	return transactionalRepository, transactionCtx, nil
-}
-
-// transactionContext implements the db.Transaction interface.
-type transactionContext struct {
-	transaction *sql.Tx
-}
-
-var _ db.Transaction = (*transactionContext)(nil) // Interface guard
-
-func (transactionCtx *transactionContext) Commit() error {
-	return transactionCtx.transaction.Commit()
-}
-
-func (transactionCtx *transactionContext) Rollback() error {
-	return transactionCtx.transaction.Rollback()
-}
+var _ db.Context = (*Context)(nil) // Interface guard
