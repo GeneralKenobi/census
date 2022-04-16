@@ -6,21 +6,21 @@ import (
 )
 
 // ContextMiddleware creates and saves in gin's context an MDC-enhanced context for the request.
-func ContextMiddleware(request *gin.Context) {
+func ContextMiddleware(ginCtx *gin.Context) {
 	ctx := mdctx.New()
-	if correlationId := request.GetHeader("X-Correlation-ID"); correlationId != "" {
+	if correlationId := ginCtx.GetHeader("X-Correlation-ID"); correlationId != "" {
 		ctx = mdctx.WithCorrelationId(ctx, correlationId)
 	}
-	ctx = mdctx.WithRequestMethod(ctx, request.Request.Method)
-	ctx = mdctx.WithRequestUri(ctx, request.Request.RequestURI)
-	ctx = mdctx.WithClientIp(ctx, request.ClientIP())
-	request.Set(requestContextKey, ctx)
-	request.Next()
+	ctx = mdctx.WithRequestMethod(ctx, ginCtx.Request.Method)
+	ctx = mdctx.WithRequestUri(ctx, ginCtx.Request.RequestURI)
+	ctx = mdctx.WithClientIp(ctx, ginCtx.ClientIP())
+	ginCtx.Set(requestContextKey, ctx)
+	ginCtx.Next()
 }
 
-func LogRequestProcessingMiddleware(request *gin.Context) {
-	ctx := Context(request)
+func LogRequestProcessingMiddleware(ginCtx *gin.Context) {
+	ctx := Context(ginCtx)
 	mdctx.Infof(ctx, "Begin processing")
-	request.Next()
+	ginCtx.Next()
 	mdctx.Debugf(ctx, "End processing")
 }

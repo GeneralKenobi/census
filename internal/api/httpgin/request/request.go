@@ -11,8 +11,8 @@ import (
 )
 
 // Context extracts context to pass downstream from a gin context.
-func Context(request *gin.Context) context.Context {
-	value, found := request.Get(requestContextKey)
+func Context(ginCtx *gin.Context) context.Context {
+	value, found := ginCtx.Get(requestContextKey)
 	if !found {
 		newCtx := mdctx.New()
 		mdctx.Warnf(newCtx, "Missing request context - creating an empty one")
@@ -33,7 +33,7 @@ const requestContextKey = "requestContext"
 
 // WriteErrorResponse looks for a wrapped api.StatusError in err, if it's found it writes the response based on it, if it's not found then
 // it writes a generic internal server error response. The error is also logged.
-func WriteErrorResponse(ctx context.Context, request *gin.Context, err error) {
+func WriteErrorResponse(ctx context.Context, ginCtx *gin.Context, err error) {
 	var apiError api.StatusError
 	if !errors.As(err, &apiError) {
 		apiError = api.StatusInternalError.WithMessageAndCause(err, "Request processing failed")
@@ -46,7 +46,7 @@ func WriteErrorResponse(ctx context.Context, request *gin.Context, err error) {
 		Message:     apiError.Message(),
 		OperationId: mdctx.OperationId(ctx),
 	}
-	request.JSON(errorDto.Status, errorDto)
+	ginCtx.JSON(errorDto.Status, errorDto)
 }
 
 func apiStatusToHttpStatus(status api.Status) int {
